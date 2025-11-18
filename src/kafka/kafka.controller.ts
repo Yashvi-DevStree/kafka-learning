@@ -1,41 +1,44 @@
 /* eslint-disable prettier/prettier */
-
-import { Body, Controller, Delete, Get, Post } from '@nestjs/common';
+import { Body, Controller, Post, Get, Delete, Param } from '@nestjs/common';
 import { KafkaService } from './kafka.service';
-import { ConsumeTopicDto, CreateTopicDto, DeleteTopicDto, SendMessageDto } from './kafka.dto';
 
 @Controller('kafka')
 export class KafkaController {
     constructor(private readonly kafkaService: KafkaService) { }
-    
+
+    // ---------------- TOPIC ROUTES ----------------
+
     @Post('create-topic')
-    async createTopic(@Body() dto: CreateTopicDto) {
-        await this.kafkaService.connect();
-        return this.kafkaService.createTopic(dto.name, dto.partitions || 1);
+    async createTopic(@Body() dto: { name: string; partitions?: number }) {
+        const result = await this.kafkaService.createTopic(dto.name, dto.partitions);
+        return { error: false, message: 'Topic created successfully', data: result };
     }
 
     @Get('list-topics')
     async listTopics() {
-        await this.kafkaService.connect();
-        return this.kafkaService.listTopics();
+        const topics = await this.kafkaService.listTopics();
+        return { error: false, message: 'Topics retrieved', data: topics };
     }
 
-    @Delete('delete-topic')  
-    async deleteTopic(@Body() dto: DeleteTopicDto) {
-        await this.kafkaService.connect();
-        return this.kafkaService.deleteTopic(dto.name);
+    @Delete('delete-topic/:name')
+    async deleteTopic(@Param('name') name: string) {
+        const result = await this.kafkaService.deleteTopic(name);
+        return { error: false, message: 'Topic deleted', data: result };
     }
+
+    // ---------------- MESSAGE ROUTES ----------------
 
     @Post('send-message')
-    async sendMessage(@Body() dto: SendMessageDto) {
-        await this.kafkaService.connect();
-        return this.kafkaService.sendMessage(dto.topic, dto.message);
+    async sendMessage(@Body() dto: { topic: string; message: string }) {
+        await this.kafkaService.sendMessage(dto.topic, dto.message);
+        return { error: false, message: 'Message sent successfully', data: null };
     }
-    
-    @Post('consume-topic')
-    async consumeTopic(@Body() dto: ConsumeTopicDto) {
-        await this.kafkaService.connect();
-        const messages = await this.kafkaService.consumeMessage(dto.topic, 2000);
-        return { messages: messages };
+
+    @Post('consume-message')
+    async consumeMessage(@Body() dto: { topic: string }) {
+        const messages: string[] = [];
+        await this.kafkaService.connectConsumer();
+        await this.kafkaService.consumeMessage(dto.topic, (msg) => messages.push(msg));
+        return { error: false, message: 'Messages consumed', data: messages };
     }
 }
