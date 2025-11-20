@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { UpdateStockDto } from './dto/update-stock.dto';
 
 @Injectable()
@@ -18,16 +18,22 @@ export class InventoryService {
         return this.products;
     }
 
+    getProductById(productId: string) {
+        const product = this.products.find((p) => p.productId === productId);
+        if (!product) throw new NotFoundException(`Product ${productId} not found`);
+        return product;
+    }
+
     updateStock(dto: UpdateStockDto) {
-        const product = this.products.find((p) => p.productId === dto.productId)
+        const product = this.products.find((p) => p.productId === dto.productId);
         if (!product) throw new NotFoundException(`Product ${dto.productId} not found`);
 
         if (product.stock < dto.quantity) {
-            throw new Error(`Not enough stock for Product ${dto.productId}`);
+            throw new BadRequestException(`Insufficient stock for product ${dto.productId}`);
         }
 
         product.stock -= dto.quantity;
-        this.logger.log(`Updated stock for ${product.productId}: ${product.stock} `);
+        this.logger.log(`Updated stock for ${product.productId}: ${product.stock}`);
         return product;
     }
 }

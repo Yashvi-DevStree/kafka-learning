@@ -1,14 +1,14 @@
 /* eslint-disable prettier/prettier */
-import { Body, Controller, Get, Patch } from '@nestjs/common';
+import { Controller, Get, Patch, Body } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { UpdateStockDto } from './dto/update-stock.dto';
 
 @Controller('inventory')
 export class InventoryController {
     constructor(private readonly inventoryService: InventoryService) { }
-    
-    @Get('products')
-    getAllProducts() {
+
+    @Get()
+    getAll() {
         return this.inventoryService.getAllProducts();
     }
 
